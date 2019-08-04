@@ -3813,7 +3813,9 @@ void OBSBasic::closeEvent(QCloseEvent *event)
 	SaveProjectNow();
 	auth.reset();
 
+#ifdef BROWSER_AVAILABLE
 	SaveExtraBrowserDocks();
+#endif
 
 	config_set_string(App()->GlobalConfig(), "BasicWindow", "DockState",
 			  saveState().toBase64().constData());
