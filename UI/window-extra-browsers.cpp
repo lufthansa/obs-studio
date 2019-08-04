@@ -77,16 +77,16 @@ QVariant ExtraBrowsersModel::data(const QModelIndex &index, int role) const
 
 	if (idx >= 0 && idx < count) {
 		switch (column) {
-		case Column::Title:
+		case (int)Column::Title:
 			return items[idx].title;
-		case Column::Url:
+		case (int)Column::Url:
 			return items[idx].url;
 		}
 	} else if (idx == count) {
 		switch (column) {
-		case Column::Title:
+		case (int)Column::Title:
 			return newTitle;
-		case Column::Url:
+		case (int)Column::Url:
 			return newURL;
 		}
 	}
@@ -103,9 +103,9 @@ QVariant ExtraBrowsersModel::headerData(int section,
 
 	if (validRole && orientation == Qt::Orientation::Horizontal) {
 		switch (section) {
-		case Column::Title:
+		case (int)Column::Title:
 			return QTStr("Title");
-		case Column::Url:
+		case (int)Column::Url:
 			return QStringLiteral("URL");
 		}
 	}
@@ -290,20 +290,20 @@ void ExtraBrowsersDelegate::UpdateText(QLineEdit *edit)
 	if (row < model->items.size()) {
 		/* if edited existing item, update it*/
 		switch (col) {
-		case Column::Title:
+		case (int)Column::Title:
 			model->items[row].title = text;
 			break;
-		case Column::Url:
+		case (int)Column::Url:
 			model->items[row].url = text;
 			break;
 		}
 	} else {
 		/* if both new values filled out, create new one */
 		switch (col) {
-		case Column::Title:
+		case (int)Column::Title:
 			model->newTitle = text;
 			break;
-		case Column::Url:
+		case (int)Column::Url:
 			model->newURL = text;
 			break;
 		}
