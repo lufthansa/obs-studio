@@ -423,6 +423,7 @@ private:
 
 	bool NoSourcesConfirmation();
 
+#ifdef BROWSER_AVAILABLE
 	QList<QSharedPointer<QDockWidget>> extraBrowserDocks;
 	QList<QSharedPointer<QAction>> extraBrowserDockActions;
 	QStringList extraBrowserDockTargets;
@@ -432,6 +433,7 @@ private:
 	void SaveExtraBrowserDocks();
 	void ManageExtraBrowserDocks();
 	void AddExtraBrowserDock(const QString &title, const QString &url);
+#endif
 
 public slots:
 	void DeferSaveBegin();

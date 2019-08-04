@@ -146,10 +146,12 @@ if(BROWSER_AVAILABLE_INTERNAL)
 	list(APPEND obs_PLATFORM_SOURCES
 		obf.c
 		auth-oauth.cpp
+		window-extra-browsers.cpp
 		)
 	list(APPEND obs_PLATFORM_HEADERS
 		obf.h
 		auth-oauth.hpp
+		window-extra-browsers.hpp
 		)
 
 	if(TWITCH_ENABLED)
@@ -220,7 +222,6 @@ set(obs_SOURCES
 	window-basic-status-bar.cpp
 	window-basic-adv-audio.cpp
 	window-basic-transform.cpp
-	window-extra-browsers.cpp
 	window-basic-preview.cpp
 	window-basic-about.cpp
 	window-namedialog.cpp
@@ -273,7 +274,6 @@ set(obs_HEADERS
 	window-basic-status-bar.hpp
 	window-basic-adv-audio.hpp
 	window-basic-transform.hpp
-	window-extra-browsers.hpp
 	window-basic-preview.hpp
 	window-namedialog.hpp
 	window-log-reply.hpp
