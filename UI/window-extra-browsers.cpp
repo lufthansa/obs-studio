@@ -130,6 +130,16 @@ public:
 	QPersistentModelIndex index;
 };
 
+class EditWidget : public QLineEdit {
+public:
+	inline EditWidget(QWidget *parent, QModelIndex index_)
+		: QLineEdit(parent), index(index_)
+	{
+	}
+
+	QPersistentModelIndex index;
+};
+
 void ExtraBrowsersModel::AddDeleteButton(int idx)
 {
 	QTableView *widget = reinterpret_cast<QTableView *>(parent());
@@ -241,15 +251,57 @@ void ExtraBrowsersModel::Apply()
 	Reset();
 }
 
+void ExtraBrowsersModel::TabSelection(bool forward)
+{
+	QListView *widget = reinterpret_cast<QListView *>(parent());
+	QItemSelectionModel *selModel = widget->selectionModel();
+
+	QModelIndex sel = selModel->currentIndex();
+	int row = sel.row();
+	int col = sel.column();
+
+	switch (sel.column()) {
+	case (int)Column::Title:
+		if (!forward) {
+			if (row == 0) {
+				return;
+			}
+
+			row -= 1;
+		}
+
+		col += 1;
+		break;
+
+	case (int)Column::Url:
+		if (forward) {
+			if (row == items.size()) {
+				return;
+			}
+
+			row += 1;
+		}
+
+		col -= 1;
+	}
+
+	sel = createIndex(row, col, nullptr);
+	selModel->setCurrentIndex(sel, QItemSelectionModel::Clear);
+}
+
+void ExtraBrowsersModel::Init()
+{
+	for (int i = 0; i < items.count(); i++)
+		AddDeleteButton(i);
+}
+
 /* ------------------------------------------------------------------------- */
 
 QWidget *ExtraBrowsersDelegate::createEditor(QWidget *parent,
 					     const QStyleOptionViewItem &,
 					     const QModelIndex &index) const
 {
-	QLineEdit *text = new QLineEdit(parent);
-	text->setProperty("row", index.row());
-	text->setProperty("col", index.column());
+	QLineEdit *text = new EditWidget(parent, index);
 	text->installEventFilter(const_cast<ExtraBrowsersDelegate *>(this));
 	text->setSizePolicy(QSizePolicy(QSizePolicy::Policy::Expanding,
 					QSizePolicy::Policy::Expanding,
@@ -272,22 +324,80 @@ bool ExtraBrowsersDelegate::eventFilter(QObject *object, QEvent *event)
 	if (!edit)
 		return false;
 
+	if (LineEditCanceled(event)) {
+		RevertText(edit);
+	}
 	if (LineEditChanged(event)) {
 		UpdateText(edit);
+
+		if (event->type() == QEvent::KeyPress) {
+			QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+			if (keyEvent->key() == Qt::Key_Tab) {
+				model->TabSelection(true);
+			} else if (keyEvent->key() == Qt::Key_Backtab) {
+				model->TabSelection(false);
+			}
+		}
 		return true;
 	}
 
 	return false;
 }
 
-void ExtraBrowsersDelegate::UpdateText(QLineEdit *edit)
+bool ExtraBrowsersDelegate::ValidName(const QString &name) const
 {
-	int row = edit->property("row").toInt();
-	int col = edit->property("col").toInt();
+	for (auto &item : model->items) {
+		if (name.compare(item.title, Qt::CaseInsensitive) == 0) {
+			return false;
+		}
+	}
+	return true;
+}
+
+void ExtraBrowsersDelegate::RevertText(QLineEdit *edit_)
+{
+	EditWidget *edit = reinterpret_cast<EditWidget *>(edit_);
+	int row = edit->index.row();
+	int col = edit->index.column();
+	bool newItem = (row == model->items.size());
+
+	QString oldText;
+	if (col == (int)Column::Title) {
+		oldText = newItem ? model->newTitle
+				  : model->items[row].title;
+	} else {
+		oldText = newItem ? model->newURL
+				  : model->items[row].url;
+	}
+
+	edit->setText(oldText);
+}
+
+bool ExtraBrowsersDelegate::UpdateText(QLineEdit *edit_)
+{
+	EditWidget *edit = reinterpret_cast<EditWidget *>(edit_);
+	int row = edit->index.row();
+	int col = edit->index.column();
+	bool newItem = (row == model->items.size());
 
 	QString text = edit->text();
 
-	if (row < model->items.size()) {
+	if (!newItem && text.isEmpty()) {
+		return false;
+	}
+
+	if (col == (int)Column::Title) {
+		QString oldText = newItem ? model->newTitle
+					  : model->items[row].title;
+		bool same = oldText.compare(text, Qt::CaseInsensitive) == 0;
+
+		if (!same && !ValidName(text)) {
+			edit->setText(oldText);
+			return false;
+		}
+	}
+
+	if (!newItem) {
 		/* if edited existing item, update it*/
 		switch (col) {
 		case (int)Column::Title:
@@ -312,6 +422,7 @@ void ExtraBrowsersDelegate::UpdateText(QLineEdit *edit)
 	}
 
 	emit commitData(edit);
+	return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -382,8 +493,8 @@ void OBSBasic::AddExtraBrowserDock(const QString &title, const QString &url)
 	dock->setFeatures(QDockWidget::AllDockWidgetFeatures);
 	dock->setWindowTitle(title);
 	dock->setFloating(true);
-	dock->setMinimumSize(50, 50);
-	dock->resize(500, 500);
+	dock->setMinimumSize(150, 150);
+	dock->resize(460, 600);
 
 	QCefWidget *browser =
 		cef->create_widget(nullptr, QT_TO_UTF8(url), nullptr);

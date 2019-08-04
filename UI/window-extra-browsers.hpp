@@ -32,8 +32,7 @@ public:
 		: QAbstractTableModel(parent)
 	{
 		Reset();
-		for (int i = 0; i < items.count(); i++)
-			AddDeleteButton(i);
+		QMetaObject::invokeMethod(this, "Init", Qt::QueuedConnection);
 	}
 
 	int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -50,6 +49,8 @@ public:
 		QString url;
 	};
 
+	void TabSelection(bool forward);
+
 	void AddDeleteButton(int idx);
 	void Reset();
 	void CheckToAdd();
@@ -62,6 +63,9 @@ public:
 
 	QString newTitle;
 	QString newURL;
+
+public slots:
+	void Init();
 };
 
 class ExtraBrowsersDelegate : public QStyledItemDelegate {
@@ -81,7 +85,9 @@ public:
 			   const QModelIndex &index) const override;
 
 	bool eventFilter(QObject *object, QEvent *event) override;
-	void UpdateText(QLineEdit *edit);
+	void RevertText(QLineEdit *edit);
+	bool UpdateText(QLineEdit *edit);
+	bool ValidName(const QString &text) const;
 
 	ExtraBrowsersModel *model;
 };

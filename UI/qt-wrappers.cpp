@@ -295,14 +295,22 @@ void ExecThreadedWithoutBlocking(std::function<void()> func,
 		ExecuteFuncSafeBlockMsgBox(func, title, text);
 }
 
+bool LineEditCanceled(QEvent *event)
+{
+	if (event->type() == QEvent::KeyPress) {
+		QKeyEvent *keyEvent = reinterpret_cast<QKeyEvent *>(event);
+		return keyEvent->key() == Qt::Key_Escape;
+	}
+
+	return false;
+}
+
 bool LineEditChanged(QEvent *event)
 {
 	if (event->type() == QEvent::KeyPress) {
-		QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+		QKeyEvent *keyEvent = reinterpret_cast<QKeyEvent *>(event);
 
 		switch (keyEvent->key()) {
-		case Qt::Key_Escape:
-			return true;
 		case Qt::Key_Tab:
 		case Qt::Key_Backtab:
 		case Qt::Key_Enter:

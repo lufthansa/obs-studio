@@ -342,6 +342,12 @@ bool SourceTreeItem::eventFilter(QObject *object, QEvent *event)
 	if (editor != object)
 		return false;
 
+	if (LineEditCanceled(event)) {
+		QMetaObject::invokeMethod(this, "ExitEditMode",
+					  Qt::QueuedConnection,
+					  Q_ARG(bool, false));
+		return true;
+	}
 	if (LineEditChanged(event)) {
 		QMetaObject::invokeMethod(this, "ExitEditMode",
 					  Qt::QueuedConnection,

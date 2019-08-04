@@ -103,4 +103,5 @@ static inline Qt::ConnectionType WaitConnection()
 		       : Qt::BlockingQueuedConnection;
 }
 
+bool LineEditCanceled(QEvent *event);
 bool LineEditChanged(QEvent *event);
