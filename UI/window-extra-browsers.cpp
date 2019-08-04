@@ -363,11 +363,9 @@ void ExtraBrowsersDelegate::RevertText(QLineEdit *edit_)
 
 	QString oldText;
 	if (col == (int)Column::Title) {
-		oldText = newItem ? model->newTitle
-				  : model->items[row].title;
+		oldText = newItem ? model->newTitle : model->items[row].title;
 	} else {
-		oldText = newItem ? model->newURL
-				  : model->items[row].url;
+		oldText = newItem ? model->newURL : model->items[row].url;
 	}
 
 	edit->setText(oldText);
