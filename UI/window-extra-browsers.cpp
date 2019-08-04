@@ -181,8 +181,10 @@ void ExtraBrowsersModel::UpdateItem(Item &item)
 	dock->setWindowTitle(item.title);
 	dock->setObjectName(item.title);
 
-	if (main->extraBrowserDockTargets[idx] != item.url)
+	if (main->extraBrowserDockTargets[idx] != item.url) {
 		dock->widget->setURL(QT_TO_UTF8(item.url));
+		main->extraBrowserDockTargets[idx] = item.url;
+	}
 }
 
 void ExtraBrowsersModel::DeleteItem()
@@ -233,6 +235,8 @@ void ExtraBrowsersModel::Apply()
 		main->extraBrowserDockActions.removeAt(idx);
 		main->extraBrowserDockTargets.removeAt(idx);
 	}
+
+	deleted.clear();
 
 	Reset();
 }
