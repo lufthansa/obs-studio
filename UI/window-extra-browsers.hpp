@@ -32,6 +32,8 @@ public:
 		: QAbstractTableModel(parent)
 	{
 		Reset();
+		for (int i = 0; i < items.count(); i++)
+			AddDeleteButton(i);
 	}
 
 	int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -48,9 +50,11 @@ public:
 		QString url;
 	};
 
+	void AddDeleteButton(int idx);
 	void Reset();
 	void CheckToAdd();
 	void UpdateItem(Item &item);
+	void DeleteItem();
 	void Apply();
 
 	QVector<Item> items;

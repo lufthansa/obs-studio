@@ -123,6 +123,32 @@ Qt::ItemFlags ExtraBrowsersModel::flags(const QModelIndex &index) const
 	return flags;
 }
 
+class DelButton : public QPushButton {
+public:
+	inline DelButton(QModelIndex index_) : QPushButton(), index(index_) {}
+
+	QPersistentModelIndex index;
+};
+
+void ExtraBrowsersModel::AddDeleteButton(int idx)
+{
+	QTableView *widget = reinterpret_cast<QTableView *>(parent());
+
+	QSizePolicy policy(QSizePolicy::Expanding, QSizePolicy::Expanding,
+			   QSizePolicy::PushButton);
+	policy.setWidthForHeight(true);
+
+	QModelIndex index = createIndex(idx, 0, nullptr);
+
+	QPushButton *del = new DelButton(index);
+	del->setProperty("themeID", "trashIcon");
+	del->setSizePolicy(policy);
+	connect(del, &QPushButton::clicked, this,
+		&ExtraBrowsersModel::DeleteItem);
+
+	widget->setIndexWidget(index, del);
+}
+
 void ExtraBrowsersModel::CheckToAdd()
 {
 	if (newTitle.isEmpty() || newURL.isEmpty())
@@ -141,6 +167,8 @@ void ExtraBrowsersModel::CheckToAdd()
 	newURL = "";
 
 	endInsertRows();
+
+	AddDeleteButton(idx - 1);
 }
 
 void ExtraBrowsersModel::UpdateItem(Item &item)
@@ -155,6 +183,36 @@ void ExtraBrowsersModel::UpdateItem(Item &item)
 
 	if (main->extraBrowserDockTargets[idx] != item.url)
 		dock->widget->setURL(QT_TO_UTF8(item.url));
+}
+
+void ExtraBrowsersModel::DeleteItem()
+{
+	QTableView *widget = reinterpret_cast<QTableView *>(parent());
+
+	DelButton *del = reinterpret_cast<DelButton *>(sender());
+	int row = del->index.row();
+
+	/* there's some sort of internal bug in Qt and deleting certain index
+	 * widgets or "editors" that can cause a crash inside Qt if the widget
+	 * is not manually removed, at least on 5.7 */
+	widget->setIndexWidget(del->index, nullptr);
+	del->deleteLater();
+
+	/* --------- */
+
+	beginRemoveRows(QModelIndex(), row, row);
+
+	int prevIdx = items[row].prevIdx;
+	items.removeAt(row);
+
+	if (prevIdx != -1) {
+		int i = 0;
+		for (; i < deleted.size() && deleted[i] < prevIdx; i++)
+			;
+		deleted.insert(i, prevIdx);
+	}
+
+	endRemoveRows();
 }
 
 void ExtraBrowsersModel::Apply()
@@ -255,13 +313,13 @@ void ExtraBrowsersDelegate::UpdateText(QLineEdit *edit)
 /* ------------------------------------------------------------------------- */
 
 OBSExtraBrowsers::OBSExtraBrowsers()
-	: QWidget(nullptr),
-	  ui(new Ui::OBSExtraBrowsers),
-	  model(new ExtraBrowsersModel)
+	: QWidget(nullptr), ui(new Ui::OBSExtraBrowsers)
 {
 	ui->setupUi(this);
 
 	setAttribute(Qt::WA_DeleteOnClose, true);
+
+	model = new ExtraBrowsersModel(ui->table);
 
 	ui->table->setModel(model);
 	ui->table->setItemDelegateForColumn((int)Column::Title,
