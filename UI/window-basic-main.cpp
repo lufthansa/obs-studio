@@ -1689,6 +1689,23 @@ void OBSBasic::OBSInit()
 	OBSBasicStats *statsDlg = new OBSBasicStats(statsDock, false);
 	statsDock->setWidget(statsDlg);
 
+	/* ----------------------------- */
+	/* add custom browser docks      */
+
+#ifdef BROWSER_AVAILABLE
+	if (cef) {
+		QAction *action = new QAction(QTStr("Basic.MainMenu."
+						    "View.Docks."
+						    "CustomBrowserDocks"));
+		ui->viewMenuDocks->insertAction(ui->toggleScenes, action);
+		connect(action, &QAction::triggered, this,
+			&OBSBasic::ManageExtraBrowserDocks);
+		ui->viewMenuDocks->insertSeparator(ui->toggleScenes);
+
+		LoadExtraBrowserDocks();
+	}
+#endif
+
 	const char *dockStateStr = config_get_string(
 		App()->GlobalConfig(), "BasicWindow", "DockState");
 	if (!dockStateStr) {
@@ -3682,6 +3699,8 @@ void OBSBasic::CloseDialogs()
 		stats->close(); //call close to save Stats geometry
 	if (!remux.isNull())
 		remux->close();
+	if (!extraBrowserManager.isNull())
+		extraBrowserManager->close();
 }
 
 void OBSBasic::EnumDialogs()
@@ -3793,6 +3812,8 @@ void OBSBasic::closeEvent(QCloseEvent *event)
 	Auth::Save();
 	SaveProjectNow();
 	auth.reset();
+
+	SaveExtraBrowserDocks();
 
 	config_set_string(App()->GlobalConfig(), "BasicWindow", "DockState",
 			  saveState().toBase64().constData());

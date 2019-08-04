@@ -102,3 +102,5 @@ static inline Qt::ConnectionType WaitConnection()
 		       ? Qt::DirectConnection
 		       : Qt::BlockingQueuedConnection;
 }
+
+bool LineEditChanged(QEvent *event);

@@ -24,6 +24,7 @@
 #include <QLayout>
 #include <QMessageBox>
 #include <QDataStream>
+#include <QKeyEvent>
 
 #if !defined(_WIN32) && !defined(__APPLE__)
 #include <QX11Info>
@@ -292,4 +293,25 @@ void ExecThreadedWithoutBlocking(std::function<void()> func,
 		ExecuteFuncSafeBlock(func);
 	else
 		ExecuteFuncSafeBlockMsgBox(func, title, text);
+}
+
+bool LineEditChanged(QEvent *event)
+{
+	if (event->type() == QEvent::KeyPress) {
+		QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+
+		switch (keyEvent->key()) {
+		case Qt::Key_Escape:
+			return true;
+		case Qt::Key_Tab:
+		case Qt::Key_Backtab:
+		case Qt::Key_Enter:
+		case Qt::Key_Return:
+			return true;
+		}
+	} else if (event->type() == QEvent::FocusOut) {
+		return true;
+	}
+
+	return false;
 }

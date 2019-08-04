@@ -124,6 +124,8 @@ class OBSBasic : public OBSMainWindow {
 	friend class AutoConfig;
 	friend class AutoConfigStreamPage;
 	friend class RecordButton;
+	friend class ExtraBrowsersModel;
+	friend class ExtraBrowsersDelegate;
 	friend struct OBSStudioAPI;
 
 	enum class MoveDir { Up, Down, Left, Right };
@@ -200,6 +202,7 @@ private:
 
 	QPointer<QWidget> stats;
 	QPointer<QWidget> remux;
+	QPointer<QWidget> extraBrowserManager;
 
 	QPointer<QMenu> startStreamMenu;
 
@@ -419,6 +422,16 @@ private:
 	void ReceivedIntroJson(const QString &text);
 
 	bool NoSourcesConfirmation();
+
+	QList<QSharedPointer<QDockWidget>> extraBrowserDocks;
+	QList<QSharedPointer<QAction>> extraBrowserDockActions;
+	QStringList extraBrowserDockTargets;
+
+	void ClearExtraBrowserDocks();
+	void LoadExtraBrowserDocks();
+	void SaveExtraBrowserDocks();
+	void ManageExtraBrowserDocks();
+	void AddExtraBrowserDock(const QString &title, const QString &url);
 
 public slots:
 	void DeferSaveBegin();
