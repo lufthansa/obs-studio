@@ -190,6 +190,7 @@ void ExtraBrowsersModel::UpdateItem(Item &item)
 		main->extraBrowserDocks[idx].data());
 	dock->setWindowTitle(item.title);
 	dock->setObjectName(item.title);
+	main->extraBrowserDockActions[idx]->setText(item.title);
 
 	if (main->extraBrowserDockTargets[idx] != item.url) {
 		dock->widget->setURL(QT_TO_UTF8(item.url));
