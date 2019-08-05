@@ -433,7 +433,7 @@ private:
 	void SaveExtraBrowserDocks();
 	void ManageExtraBrowserDocks();
 	void AddExtraBrowserDock(const QString &title, const QString &url,
-			bool firstLoad = false);
+				 bool firstCreate);
 #endif
 
 public slots:
