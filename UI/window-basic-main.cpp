@@ -3813,12 +3813,13 @@ void OBSBasic::closeEvent(QCloseEvent *event)
 	SaveProjectNow();
 	auth.reset();
 
-#ifdef BROWSER_AVAILABLE
-	SaveExtraBrowserDocks();
-#endif
-
 	config_set_string(App()->GlobalConfig(), "BasicWindow", "DockState",
 			  saveState().toBase64().constData());
+
+#ifdef BROWSER_AVAILABLE
+	SaveExtraBrowserDocks();
+	ClearExtraBrowserDocks();
+#endif
 
 	if (api)
 		api->on_event(OBS_FRONTEND_EVENT_EXIT);

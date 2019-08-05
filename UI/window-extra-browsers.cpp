@@ -6,11 +6,15 @@
 #include <QLineEdit>
 #include <QHBoxLayout>
 
+#include <json11.hpp>
+
 #include "ui_OBSExtraBrowsers.h"
 
 #include <browser-panel.hpp>
 extern QCef *cef;
 extern QCefCookieManager *panel_cookies;
+
+using namespace json11;
 
 enum class Column : int {
 	Delete,
@@ -22,7 +26,7 @@ enum class Column : int {
 
 class ExtraBrowser : public OBSDock {
 public:
-	inline ExtraBrowser() : OBSDock() {}
+	inline ExtraBrowser() : OBSDock(OBSBasic::Get()) {}
 
 	QScopedPointer<QCefWidget> widget;
 
@@ -242,9 +246,11 @@ void ExtraBrowsersModel::Apply()
 
 	for (int i = deleted.size() - 1; i >= 0; i--) {
 		int idx = deleted[i];
-		main->extraBrowserDocks.removeAt(idx);
+		QDockWidget *dock = main->extraBrowserDocks[idx].data();
+		dock->setFloating(true);
 		main->extraBrowserDockActions.removeAt(idx);
 		main->extraBrowserDockTargets.removeAt(idx);
+		main->extraBrowserDocks.removeAt(idx);
 	}
 
 	deleted.clear();
@@ -450,8 +456,13 @@ OBSExtraBrowsers::OBSExtraBrowsers()
 
 OBSExtraBrowsers::~OBSExtraBrowsers()
 {
-	model->Apply();
 	delete ui;
+}
+
+void OBSExtraBrowsers::closeEvent(QCloseEvent *event)
+{
+	QWidget::closeEvent(event);
+	model->Apply();
 }
 
 void OBSExtraBrowsers::on_apply_clicked()
@@ -463,14 +474,50 @@ void OBSExtraBrowsers::on_apply_clicked()
 
 void OBSBasic::ClearExtraBrowserDocks()
 {
+	delete extraBrowserManager;
+
+	for (auto &dock : extraBrowserDocks)
+		dock->setFloating(true);
 	extraBrowserDocks.clear();
 	extraBrowserDockActions.clear();
 	extraBrowserDockTargets.clear();
 }
 
-void OBSBasic::LoadExtraBrowserDocks() {}
+void OBSBasic::LoadExtraBrowserDocks()
+{
+	const char *jsonStr = config_get_string(App()->GlobalConfig(), "BasicWindow", "ExtraBrowserDocks");
 
-void OBSBasic::SaveExtraBrowserDocks() {}
+	std::string err;
+	Json json = Json::parse(jsonStr, err);
+	if (!err.empty())
+		return;
+
+	Json::array array = json.array_items();
+	for (Json &item : array) {
+		std::string title = item["title"].string_value();
+		std::string url = item["url"].string_value();
+
+		AddExtraBrowserDock(title.c_str(), url.c_str(), true);
+	}
+}
+
+void OBSBasic::SaveExtraBrowserDocks()
+{
+	Json::array array;
+	for (int i = 0; i < extraBrowserDocks.size(); i++) {
+		QAction *action = extraBrowserDockActions[i].data();
+		QString url = extraBrowserDockTargets[i];
+		Json::object obj {
+			{"title", QT_TO_UTF8(action->text())},
+			{"url", QT_TO_UTF8(url)},
+		};
+		array.push_back(obj);
+	}
+
+	std::string output = Json(array).dump();
+	config_set_string(App()->GlobalConfig(), "BasicWindow", "ExtraBrowserDocks",
+			output.c_str());
+}
 
 void OBSBasic::ManageExtraBrowserDocks()
 {
@@ -485,7 +532,8 @@ void OBSBasic::ManageExtraBrowserDocks()
 	extraBrowserManager = dlg;
 }
 
-void OBSBasic::AddExtraBrowserDock(const QString &title, const QString &url)
+void OBSBasic::AddExtraBrowserDock(const QString &title, const QString &url,
+		bool firstLoad)
 {
 	ExtraBrowser *dock = new ExtraBrowser();
 	dock->setObjectName(title);
@@ -502,8 +550,10 @@ void OBSBasic::AddExtraBrowserDock(const QString &title, const QString &url)
 	addDockWidget(Qt::RightDockWidgetArea, dock);
 	QAction *action = AddDockWidget(dock);
 
-	dock->setFloating(true);
-	dock->setVisible(true);
+	if (!firstLoad) {
+		dock->setFloating(true);
+		dock->setVisible(true);
+	}
 
 	extraBrowserDocks.push_back(QSharedPointer<QDockWidget>(dock));
 	extraBrowserDockActions.push_back(QSharedPointer<QAction>(action));

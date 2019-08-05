@@ -20,6 +20,8 @@ public:
 	OBSExtraBrowsers();
 	~OBSExtraBrowsers();
 
+	void closeEvent(QCloseEvent *event) override;
+
 public slots:
 	void on_apply_clicked();
 };
