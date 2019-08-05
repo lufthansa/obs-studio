@@ -543,6 +543,9 @@ void OBSBasic::AddExtraBrowserDock(const QString &title, const QString &url,
 
 	QCefWidget *browser =
 		cef->create_widget(nullptr, QT_TO_UTF8(url), nullptr);
+	if (browser)
+		browser->allowAllPopups(true);
+
 	dock->SetWidget(browser);
 
 	addDockWidget(Qt::RightDockWidgetArea, dock);
