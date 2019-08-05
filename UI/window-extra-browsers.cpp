@@ -534,6 +534,11 @@ void OBSBasic::ManageExtraBrowserDocks()
 void OBSBasic::AddExtraBrowserDock(const QString &title, const QString &url,
 				   bool firstCreate)
 {
+	static int panel_version = -1;
+	if (panel_version == -1) {
+		panel_version = obs_browser_qcef_version();
+	}
+
 	ExtraBrowser *dock = new ExtraBrowser();
 	dock->setObjectName(title + OBJ_NAME_SUFFIX);
 	dock->resize(460, 600);
@@ -543,7 +548,7 @@ void OBSBasic::AddExtraBrowserDock(const QString &title, const QString &url,
 
 	QCefWidget *browser =
 		cef->create_widget(nullptr, QT_TO_UTF8(url), nullptr);
-	if (browser)
+	if (browser && panel_version >= 1)
 		browser->allowAllPopups(true);
 
 	dock->SetWidget(browser);
