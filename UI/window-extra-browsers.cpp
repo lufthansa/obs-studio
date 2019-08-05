@@ -16,6 +16,8 @@ extern QCefCookieManager *panel_cookies;
 
 using namespace json11;
 
+#define OBJ_NAME_SUFFIX "_extraBrowser"
+
 enum class Column : int {
 	Delete,
 	Title,
@@ -193,7 +195,7 @@ void ExtraBrowsersModel::UpdateItem(Item &item)
 	ExtraBrowser *dock = reinterpret_cast<ExtraBrowser *>(
 		main->extraBrowserDocks[idx].data());
 	dock->setWindowTitle(item.title);
-	dock->setObjectName(item.title);
+	dock->setObjectName(item.title + OBJ_NAME_SUFFIX);
 	main->extraBrowserDockActions[idx]->setText(item.title);
 
 	if (main->extraBrowserDockTargets[idx] != item.url) {
@@ -533,7 +535,7 @@ void OBSBasic::AddExtraBrowserDock(const QString &title, const QString &url,
 				   bool firstCreate)
 {
 	ExtraBrowser *dock = new ExtraBrowser();
-	dock->setObjectName(title);
+	dock->setObjectName(title + OBJ_NAME_SUFFIX);
 	dock->resize(460, 600);
 	dock->setMinimumSize(150, 150);
 	dock->setWindowTitle(title);
