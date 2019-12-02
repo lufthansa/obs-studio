@@ -524,9 +524,13 @@ static inline void render_video(struct obs_core_video *video, bool raw_active,
 	gs_enable_depth_test(false);
 	gs_set_cull_mode(GS_NEITHER);
 
-	render_main_texture(video);
+	render_main_texture(video);  // 渲染所有source到画布上
 
 	if (raw_active || gpu_active) {
+		// 将画布上的数据拷贝到纹理中, 此处格式是GS_RGBA
+		// 画布对象是struct obs_core_video::render_texture
+		// 如果画布宽高和output宽高一致，则返回的是obs_core_video::render_texture，
+		// 否则在obs_core_video::output_texture对render_texture做缩放后 返回output_texture
 		gs_texture_t *texture = render_output_texture(video);
 
 #ifdef _WIN32
@@ -548,6 +552,9 @@ static inline void render_video(struct obs_core_video *video, bool raw_active,
 			output_gpu_encoders(video, raw_active);
 		}
 #endif
+		// 如果有录像或直播 将GPU转换后的纹理保存下来
+		// GPU转换后的纹理 存储在struct obs_core_video::convert_textures
+		// 数据保存在obs_core_video::copy_surfaces
 		if (raw_active)
 			stage_output_texture(video, texture, cur_texture);
 	}
@@ -757,8 +764,8 @@ static const char *output_frame_output_video_data_name = "output_video_data";
 static inline void output_frame(bool raw_active, const bool gpu_active)
 {
 	struct obs_core_video *video = &obs->video;
-	int cur_texture = video->cur_texture;
-	int prev_texture = cur_texture == 0 ? NUM_TEXTURES - 1
+	int cur_texture = video->cur_texture; // 本次渲染周期需要渲染的纹理索引
+	int prev_texture = cur_texture == 0 ? NUM_TEXTURES - 1   // 上次渲染的纹理索引
 					    : cur_texture - 1;
 	struct video_data frame;
 	bool frame_ready = 0;
@@ -771,10 +778,12 @@ static inline void output_frame(bool raw_active, const bool gpu_active)
 	profile_start(output_frame_render_video_name);
 	GS_DEBUG_MARKER_BEGIN(GS_DEBUG_COLOR_RENDER_VIDEO,
 			      output_frame_render_video_name);
+	// 渲染所有source 保存画布数据 更新下次渲染纹理的索引
 	render_video(video, raw_active, gpu_active, cur_texture);
 	GS_DEBUG_MARKER_END();
 	profile_end(output_frame_render_video_name);
 
+	// 当有推流或录像的时候 该值是true
 	if (raw_active) {
 		// 錄製視頻或推流時進來。
 		profile_start(output_frame_download_frame_name);
@@ -798,6 +807,7 @@ static inline void output_frame(bool raw_active, const bool gpu_active)
 
 		frame.timestamp = vframe_info.timestamp;
 		profile_start(output_frame_output_video_data_name);
+		// send video texture，触发信号量 通知video_thread线程可以取数据了
 		output_video_data(video, &frame, vframe_info.count);
 		profile_end(output_frame_output_video_data_name);
 	}
@@ -888,11 +898,12 @@ void *obs_graphics_thread(void *param)
 		profile_start(video_thread_name);
 
 		profile_start(tick_sources_name);
-		// 從所有源裏獲取每個源的數據
+		// 遍历了所有source，对每个source（不止是当前场景的source）调用obs_source_video_tickd
 		last_time = tick_sources(obs->video.video_time, last_time);
 		profile_end(tick_sources_name);
 
 		profile_start(output_frame_name);
+		// 渲染所有source 保存画布数据 等待推流线程来取并推流。
 		output_frame(raw_active, gpu_active);
 		profile_end(output_frame_name);
 
