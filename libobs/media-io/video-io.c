@@ -1,4 +1,4 @@
-/******************************************************************************
+﻿/******************************************************************************
     Copyright (C) 2013 by Hugh Bailey <obs.jim@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -171,6 +171,8 @@ static inline bool video_output_cur_frame(struct video_output *video)
 
 static void *video_thread(void *param)
 {
+	// 這個video就是那個全局bos對象裏的obs_core_video video對象裏的那個video_output *video對象
+	// 在output_video_data()函數裏設置
 	struct video_output *video = param;
 
 	os_set_thread_name("video-io: video thread");

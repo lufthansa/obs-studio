@@ -62,6 +62,7 @@ static uint64_t tick_sources(uint64_t cur_time, uint64_t last_time)
 		source = (struct obs_source *)source->context.next;
 
 		if (cur_source) {
+			// 最終調用source的video_tick回調，這個回調不同源有不同的處理函數，去獲取源數據。
 			obs_source_video_tick(cur_source, seconds);
 			obs_source_release(cur_source);
 		}
@@ -88,7 +89,7 @@ static inline void render_displays(void)
 	pthread_mutex_lock(&obs->data.displays_mutex);
 
 	display = obs->data.first_display;
-	while (display) {
+	while (display) {	// display就是preview那個窗口，如果在studio mode，就有兩個display
 		render_display(display);
 		display = display->next;
 	}
@@ -565,6 +566,7 @@ static inline bool download_frame(struct obs_core_video *video,
 	if (!video->textures_copied[prev_texture])
 		return false;
 
+	// 從d3d或opegl拷貝數據，data為數據，按行放置，linesize為一行數據的像素值。黑色的地方數據都是0x10
 	if (!gs_stagesurface_map(surface, &frame->data[0], &frame->linesize[0]))
 		return false;
 
@@ -695,11 +697,12 @@ static inline void output_video_data(struct obs_core_video *video,
 				     struct video_data *input_frame, int count)
 {
 	const struct video_output_info *info;
-	struct video_frame output_frame;
+	struct video_frame output_frame;	// 會設置成指向video中的frame
 	bool locked;
 
 	info = video_output_get_info(video->video);
 
+	// 將video中的frame用output_frame指代。並鎖住，準備進行轉換
 	locked = video_output_lock_frame(video->video, &output_frame, count,
 					 input_frame->timestamp);
 	if (locked) {
@@ -710,6 +713,7 @@ static inline void output_video_data(struct obs_core_video *video,
 			copy_rgbx_frame(&output_frame, input_frame, info);
 		}
 
+		// 解鎖，並發生信號量讓video_thread去處理。
 		video_output_unlock_frame(video->video);
 	}
 }
@@ -772,7 +776,10 @@ static inline void output_frame(bool raw_active, const bool gpu_active)
 	profile_end(output_frame_render_video_name);
 
 	if (raw_active) {
+		// 錄製視頻或推流時進來。
 		profile_start(output_frame_download_frame_name);
+		// 獲取frame數據，win下從d3d獲取 d3d11-subsystem.cpp:; gs_stagesurface_map()
+		// 獲取到的數據放到frame中
 		frame_ready = download_frame(video, prev_texture, &frame);
 		profile_end(output_frame_download_frame_name);
 	}
@@ -881,6 +888,7 @@ void *obs_graphics_thread(void *param)
 		profile_start(video_thread_name);
 
 		profile_start(tick_sources_name);
+		// 從所有源裏獲取每個源的數據
 		last_time = tick_sources(obs->video.video_time, last_time);
 		profile_end(tick_sources_name);
 

@@ -205,19 +205,117 @@ gs_stagesurface_get_color_format(const gs_stagesurf_t *stagesurf)
 	return stagesurf->format;
 }
 
+typedef unsigned char BYTE;
+typedef unsigned short WORD;
+typedef unsigned int DWORD;
+typedef long LONG;
+
+//位图文件头定义;
+//其中不包含文件类型信息（由于结构体的内存结构决定，
+//要是加了的话将不能正确读取文件信息）
+//typedef struct tagBITMAPFILEHEADER {
+//	//WORD bfType;//文件类型，必须是0x424D，即字符“BM”
+//	DWORD bfSize;     //文件大小
+//	WORD bfReserved1; //保留字
+//	WORD bfReserved2; //保留字
+//	DWORD bfOffBits;  //从文件头到实际位图数据的偏移字节数
+//} BITMAPFILEHEADER;
+//
+//typedef struct tagBITMAPINFOHEADER {
+//	DWORD biSize;         //信息头大小
+//	LONG biWidth;         //图像宽度
+//	LONG biHeight;        //图像高度
+//	WORD biPlanes;        //位平面数，必须为1
+//	WORD biBitCount;      //每像素位数
+//	DWORD biCompression;  //压缩类型
+//	DWORD biSizeImage;    //压缩图像大小字节数
+//	LONG biXPelsPerMeter; //水平分辨率
+//	LONG biYPelsPerMeter; //垂直分辨率
+//	DWORD biClrUsed;      //位图实际用到的色彩数
+//	DWORD biClrImportant; //本位图中重要的色彩数
+//} BITMAPINFOHEADER;           //位图信息头定义
+//
+//typedef struct tagRGBQUAD {
+//	BYTE rgbBlue;     //该颜色的蓝色分量
+//	BYTE rgbGreen;    //该颜色的绿色分量
+//	BYTE rgbRed;      //该颜色的红色分量
+//	BYTE rgbReserved; //保留值
+//} RGBQUAD;                //调色板定义
+
+//像素信息
+typedef struct tagIMAGEDATA {
+	BYTE red;
+	BYTE green;
+	BYTE blue;
+} IMAGEDATA;
+//变量定义
+BITMAPFILEHEADER strHead;
+RGBQUAD strPla[256]; //256色调色板
+BITMAPINFOHEADER strInfo;
+IMAGEDATA imagedata[256][256]; //存储像素信息
+#include <stdio.h>
+static void saveBmp(uint8_t *data)
+{
+	FILE *fpw;
+	//保存bmp图片
+	if ((fpw = fopen("C:/Users/willche/work/b.bmp", "wb")) == NULL) {
+		int a = GetLastError();
+		return;
+	}
+	WORD bfType = 0x4d42;
+	fwrite((void *)&bfType, sizeof(WORD), 1, fpw);
+
+	strHead.bfOffBits = sizeof(BITMAPINFOHEADER) + sizeof(BITMAPFILEHEADER);
+	strHead.bfSize = strHead.bfOffBits + 1280 * 720;
+	//fpw +=2;
+	strInfo.biBitCount = 8;
+	strInfo.biHeight = 720;
+	strInfo.biWidth = 1280;
+	strInfo.biSize = sizeof(BITMAPINFOHEADER);
+	strInfo.biCompression = 0;
+
+	fwrite(&strHead, 1, sizeof(BITMAPFILEHEADER), fpw);
+	fwrite(&strInfo, 1, sizeof(BITMAPINFOHEADER), fpw);
+	////保存调色板数据
+	//for (int nCounti = 0; nCounti < strInfo.biClrUsed; nCounti++) {
+	//	fwrite(&strPla[nCounti].rgbBlue, 1, sizeof(BYTE), fpw);
+	//	fwrite(&strPla[nCounti].rgbGreen, 1, sizeof(BYTE), fpw);
+	//	fwrite(&strPla[nCounti].rgbRed, 1, sizeof(BYTE), fpw);
+	//}
+	////保存像素数据
+	//for (int i = 0; i < strInfo.biWidth; ++i) {
+	//	for (int j = 0; j < strInfo.biHeight; ++j) {
+	//		fwrite(&imagedata[i][j].blue, 1, sizeof(BYTE), fpw);
+	//		fwrite(&imagedata[i][j].green, 1, sizeof(BYTE), fpw);
+	//		fwrite(&imagedata[i][j].red, 1, sizeof(BYTE), fpw);
+	//	}
+	//}
+
+	// 写数据
+	fwrite(data, 1280 * 720, sizeof(BYTE), fpw);
+
+	fclose(fpw);
+}
+
 bool gs_stagesurface_map(gs_stagesurf_t *stagesurf, uint8_t **data,
 			 uint32_t *linesize)
 {
 	if (!gl_bind_buffer(GL_PIXEL_PACK_BUFFER, stagesurf->pack_buffer))
 		goto fail;
 
-	*data = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+	*data = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_WRITE/*ONLY*/);
 	if (!gl_success("glMapBuffer"))
 		goto fail;
 
 	gl_bind_buffer(GL_PIXEL_PACK_BUFFER, 0);
 
 	*linesize = stagesurf->bytes_per_pixel * stagesurf->width;
+
+//	saveBmp(*data);
+
+	//uint8_t *dataw = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_WRITE_ONLY);
+	memset(*data, 0 ,1280*320);
+
 	return true;
 
 fail:

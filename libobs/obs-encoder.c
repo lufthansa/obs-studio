@@ -1005,7 +1005,7 @@ bool video_pause_check(struct pause_data *pause, uint64_t timestamp)
 
 	return ignore_frame;
 }
-
+// willche 由video-io.c:: video_output_cur_frame() 回調回來，做視頻encode
 static const char *receive_video_name = "receive_video";
 static void receive_video(void *param, struct video_data *frame)
 {

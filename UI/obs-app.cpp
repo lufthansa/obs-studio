@@ -377,6 +377,7 @@ bool OBSApp::InitGlobalConfigDefaults()
 	config_set_default_bool(globalConfig, "General", "EnableAutoUpdates",
 				true);
 
+	// willche 改成opendl
 #if _WIN32
 	config_set_default_string(globalConfig, "Video", "Renderer",
 				  "Direct3D 11");

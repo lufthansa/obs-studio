@@ -1,4 +1,4 @@
-/******************************************************************************
+﻿/******************************************************************************
     Copyright (C) 2013 by Hugh Bailey <obs.jim@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -1017,6 +1017,9 @@ void gs_draw_sprite(gs_texture_t *tex, uint32_t flip, uint32_t width,
 		}
 	}
 
+	unsigned int www = gs_texture_get_width(tex);
+	unsigned int hhh = gs_texture_get_height(tex);
+
 	fcx = width ? (float)width : (float)gs_texture_get_width(tex);
 	fcy = height ? (float)height : (float)gs_texture_get_height(tex);
 
@@ -1279,7 +1282,7 @@ void gs_resize(uint32_t x, uint32_t y)
 
 	graphics->exports.device_resize(graphics->device, x, y);
 }
-
+// 獲取到的是preview所在的那整個畫布的實際像素尺寸，不是preview的尺寸
 void gs_get_size(uint32_t *x, uint32_t *y)
 {
 	graphics_t *graphics = thread_graphics;

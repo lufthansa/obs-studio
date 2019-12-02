@@ -639,7 +639,7 @@ update_transforms_and_prune_sources(obs_scene_t *scene,
 	if (rebuild_group && group_sceneitem)
 		resize_group(group_sceneitem);
 }
-
+// willche 对scene中的所有item循环渲染
 static void scene_video_render(void *data, gs_effect_t *effect)
 {
 	DARRAY(struct obs_scene_item *) remove_items;

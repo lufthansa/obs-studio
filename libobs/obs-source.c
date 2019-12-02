@@ -1042,7 +1042,7 @@ void obs_source_video_tick(obs_source_t *source, float seconds)
 		obs_transition_tick(source);
 
 	if ((source->info.output_flags & OBS_SOURCE_ASYNC) != 0)
-		async_tick(source);
+		async_tick(source);	// 摄像头进这里
 
 	if (source->defer_update)
 		obs_source_deferred_update(source);
@@ -1075,6 +1075,7 @@ void obs_source_video_tick(obs_source_t *source, float seconds)
 		source->active = now_active;
 	}
 
+	// 調用各個源綁定的回調函數獲取數據。放入source->context.data中
 	if (source->context.data && source->info.video_tick)
 		source->info.video_tick(source->context.data, seconds);
 
